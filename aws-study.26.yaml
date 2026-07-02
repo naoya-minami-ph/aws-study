@@ -234,6 +234,7 @@ Resources:
       DBSubnetGroupName: !Ref myDBSubnetGroup
       VPCSecurityGroups:
         - !Ref mySGRDS
+      PubliclyAccessible: false
       Tags:
         - Key: Name
           Value: aws-study-rds
