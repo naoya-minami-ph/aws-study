@@ -1,19 +1,31 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: AWS-study template
-  
+
+Parameters:
+  MyIP:
+    Type: String
+    Default: 175.176.67.202
+    Description: Your IP address for SSH access
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: RDS master password
+    MinLength: 8
+
 Resources:
 # VPC
   myVPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
         - Key: Name
           Value: aws-study-vpc
 
 # Subnet
-  mySubnet:
+  SubnetAZ1a:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref myVPC
@@ -22,10 +34,10 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: aws-study-subnet
+          Value: aws-study-subnet1a
 
 # Subnet2
-  mySubnet2:
+  SubnetAZ1c:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref myVPC
@@ -34,18 +46,18 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: aws-study-subnet2
+          Value: aws-study-subnet1c
 
-# Internet Gateway
+# InternetGateway
   myIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: aws-study-igw
+          Value: aws-study-gw
 
-# VPCにアタッチ
-  AttachIGW:
+# VPCgatewayAttachment
+  gatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref myVPC
@@ -58,10 +70,9 @@ Resources:
       VpcId: !Ref myVPC
       Tags:
         - Key: Name
-          Value: aws-study-rt
+          Value: aws-study-route
 
-# ルートを追加
-  DefaultRoute:
+  RouteInternet:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref myRouteTable
@@ -69,89 +80,157 @@ Resources:
       GatewayId: !Ref myIGW
 
 # Subnetにルートテーブルを関連付け
-  SubnetRouteTableAssociation:
+  RouteLocal:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref mySubnet
+      SubnetId: !Ref SubnetAZ1a
       RouteTableId: !Ref myRouteTable
 
-# Security group
-  mySG:
+  RouteLocal2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetAZ1c
+      RouteTableId: !Ref myRouteTable
+
+# Security Group EC2
+  mySGEC2:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: aws-study-sg
-      GroupDescription: Allow SSH and HTTP
+      GroupName: aws-study-sg-ec2
+      GroupDescription: Allow SSH, HTTP and 8080 inbound
       VpcId: !Ref myVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Sub "${MyIP}/32"
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: aws-study-sg
+          Value: aws-study-sg-ec2
+
+# Security Group RDS
+  mySGRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: aws-study-sg-rds
+      GroupDescription: Allow MySQL 3306 inbound from EC2
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref mySGEC2
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: aws-study-sg-rds
 
 # EC2
   myEC2:
     Type: AWS::EC2::Instance
     Properties:
+      ImageId: !Sub "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
       InstanceType: t3.micro
-      SubnetId: !Ref mySubnet
+      SubnetId: !Ref SubnetAZ1a
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      KeyName: nan.tt0105
+      Monitoring: false
       SecurityGroupIds:
-        - !Ref mySG
-      ImageId: ami-0d52744d6551d851e  # 東京リージョンのAmazon Linux 2
-      KeyName: nan.tt0105      # ここは自分のキーペア名
+        - !Ref mySGEC2
       Tags:
         - Key: Name
           Value: aws-study-ec2
 
-# TargetGroupe
-  myTargetGroup:
+# RDS
+  myRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      DBInstanceClass: db.t4g.micro
+      Port: 3306
+      StorageType: gp2
+      BackupRetentionPeriod: 1
+      MasterUsername: root
+      MasterUserPassword: !Ref DBPassword
+      PreferredBackupWindow: 22:00-23:00
+      PreferredMaintenanceWindow: sun:18:00-sun:19:00
+      DBName: awsstudy
+      Engine: mysql
+      LicenseModel: general-public-license
+      DBSubnetGroupName: !Ref myDBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref mySGRDS
+      Tags:
+        - Key: Name
+          Value: aws-study-rds
+
+  myDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Created from the RDS Management Console
+      SubnetIds:
+        - !Ref SubnetAZ1a
+        - !Ref SubnetAZ1c
+
+# ALB
+  myELB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: aws-study-alb
+      SecurityGroups:
+        - !Ref mySGEC2
+      Subnets:
+        - !Ref SubnetAZ1a
+        - !Ref SubnetAZ1c
+      Tags:
+        - Key: Name
+          Value: aws-study-elb
+
+  myELBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name: aws-study-elb-target-group
       Port: 80
       Protocol: HTTP
       VpcId: !Ref myVPC
-      TargetType: instance
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      HealthCheckTimeoutSeconds: 5
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: "/"
+      HealthCheckPort: "traffic-port"
+      HealthCheckIntervalSeconds: 10
+      Matcher:
+        HttpCode: 200
+      Tags:
+        - Key: Name
+          Value: aws-study-elb-target-group
+      Targets:
+        - Id: !Ref myEC2
+          Port: 8080
 
-# loadBalancer
-  myLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Subnets:
-        - !Ref mySubnet
-        - !Ref mySubnet2
-# ALB Listener（HTTP:80 → TargetGroup）
-  MyListener:
+  ELBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
+      LoadBalancerArn: !Ref myELB
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref myTargetGroup
-      LoadBalancerArn: !GetAtt myLoadBalancer.LoadBalancerArn
+          TargetGroupArn: !Ref myELBTargetGroup
       Port: 80
       Protocol: HTTP
-
-# MyDBSubnetGroup
-  MyDBSubnetGroup:
-    Type: AWS::RDS::DBSubnetGroup
-    Properties:
-      DBSubnetGroupDescription: My DB subnet group
-      SubnetIds:
-        - !Ref mySubnet
-        - !Ref mySubnet2
-
-# MyDB   
-  MyDB:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      Engine: mysql
-      DBInstanceClass: db.t3.micro
-      AllocatedStorage: 20
-      MasterUsername: admin
-      MasterUserPassword: password123
-      DBSubnetGroupName: !Ref MyDBSubnetGroup
