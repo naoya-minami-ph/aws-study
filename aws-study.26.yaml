@@ -48,6 +48,29 @@ Resources:
         - Key: Name
           Value: aws-study-subnet1c
 
+# RDS用プライベートサブネット
+  SubnetPrivateAZ1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: ap-northeast-1a
+      MapPublicIpOnLaunch: false    # ← プライベート
+      Tags:
+        - Key: Name
+          Value: aws-study-subnet-private-1a
+
+  SubnetPrivateAZ1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: ap-northeast-1c
+      MapPublicIpOnLaunch: false    # ← プライベート
+      Tags:
+        - Key: Name
+          Value: aws-study-subnet-private-1c
+
 # InternetGateway
   myIGW:
     Type: AWS::EC2::InternetGateway
@@ -72,6 +95,14 @@ Resources:
         - Key: Name
           Value: aws-study-route
 
+  myprivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags:
+        - Key: Name
+          Value: aws-study-private-route
+
   RouteInternet:
     Type: AWS::EC2::Route
     Properties:
@@ -91,6 +122,18 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetAZ1c
       RouteTableId: !Ref myRouteTable
+
+  PrivateRouteAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPrivateAZ1a
+      RouteTableId: !Ref myprivateRouteTable
+
+  PrivateRouteAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetPrivateAZ1c
+      RouteTableId: !Ref myprivateRouteTable 
 
 # Security Group EC2
   mySGEC2:
@@ -200,8 +243,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Created from the RDS Management Console
       SubnetIds:
-        - !Ref SubnetAZ1a
-        - !Ref SubnetAZ1c
+        - !Ref SubnetPrivateAZ1a
+        - !Ref SubnetPrivateAZ1c
 
 # ALB
   myELB:
