@@ -97,7 +97,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: aws-study-sg-ec2
-      GroupDescription: Allow SSH, HTTP and 8080 inbound
+      GroupDescription: Allow SSH, HTTP inbound
       VpcId: !Ref myVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -107,11 +107,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: !Ref mySGALB
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -137,6 +133,25 @@ Resources:
       Tags:
         - Key: Name
           Value: aws-study-sg-rds
+
+# Security Group ALB（新規追加）
+  mySGALB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: aws-study-sg-alb
+      GroupDescription: Allow HTTP 80 inbound
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: aws-study-sg-alb
 
 # EC2
   myEC2:
@@ -194,7 +209,7 @@ Resources:
     Properties:
       Name: aws-study-alb
       SecurityGroups:
-        - !Ref mySGEC2
+        - !Ref mySGALB
       Subnets:
         - !Ref SubnetAZ1a
         - !Ref SubnetAZ1c
@@ -223,7 +238,7 @@ Resources:
           Value: aws-study-elb-target-group
       Targets:
         - Id: !Ref myEC2
-          Port: 8080
+          Port: 80
 
   ELBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
