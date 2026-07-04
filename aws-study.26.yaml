@@ -373,7 +373,7 @@ Resources:
       MetricName: "BlockedRequests"
       Dimensions:
         - Name: WebACL
-          Value: awsStudyWebACL
+          Value: aws-study-webacl
         - Name: Region
           Value: ap-northeast-1
         - Name: Rule
