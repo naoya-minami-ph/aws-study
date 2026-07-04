@@ -334,7 +334,7 @@ Resources:
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: awsStudyWebACL
+        MetricName: aws-study-webacl
 
       Rules:
         - Name: AWS-AWSManagedRulesCommonRuleSet
