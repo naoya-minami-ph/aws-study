@@ -353,7 +353,7 @@ Resources:
   MyWebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
-      ResourceArn: !GetAtt myELB.LoadBalancerArn
+      ResourceArn: !Ref myELB
       WebACLArn: !GetAtt myWebACL.Arn
 
   mySNSTopic:
@@ -363,6 +363,7 @@ Resources:
       Subscription:
         - Protocol: email
           Endpoint: !Ref NotificationEmail
+
   myWAFBlockedRequestsAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -372,7 +373,7 @@ Resources:
       MetricName: "BlockedRequests"
       Dimensions:
         - Name: WebACL
-          Value: aws-study-webacl
+          Value: awsStudyWebACL
         - Name: Region
           Value: ap-northeast-1
         - Name: Rule
@@ -386,3 +387,18 @@ Resources:
       ActionsEnabled: true
       AlarmActions:
         - !Ref mySNSTopic
+
+# CloudWatch Logs ロググループ
+  myWAFLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "aws-waf-logs-aws-study"
+      RetentionInDays: 90
+
+# WAF ログ設定
+  myWAFLoggingConfiguration:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      ResourceArn: !GetAtt myWebACL.Arn
+      LogDestinationConfigs:
+        - !GetAtt myWAFLogGroup.Arn      
