@@ -11,6 +11,9 @@ Parameters:
     NoEcho: true
     Description: RDS master password
     MinLength: 8
+  NotificationEmail:
+    Type: String
+    Description: Email address for alarm notifications
 
 Resources:
 # VPC
@@ -293,3 +296,93 @@ Resources:
           TargetGroupArn: !Ref myELBTargetGroup
       Port: 80
       Protocol: HTTP
+
+  myEC2CPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "aws-study-cpu-utilization-alarm"
+      AlarmDescription: "Aws-study-ec2 のCPU使用率が5%以上になりました"
+
+      Namespace: "AWS/EC2"
+      Dimensions:
+        - Value: !Ref myEC2
+          Name: "InstanceId"
+      MetricName: "CPUUtilization"
+      Unit: "Percent"
+
+      Period: 300
+      Statistic: "Average"
+
+      Threshold: 5
+      ComparisonOperator: "GreaterThanOrEqualToThreshold"
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 2
+      TreatMissingData: "missing"
+
+      ActionsEnabled: True
+      AlarmActions:
+        - !Ref mySNSTopic
+
+  myWebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: aws-study-webacl
+      Scope: REGIONAL   # ← ALBは必ず REGIONAL
+      DefaultAction:
+        Allow: {}
+
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: awsStudyWebACL
+
+      Rules:
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: commonRules
+
+  MyWebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !GetAtt myELB.LoadBalancerArn
+      WebACLArn: !GetAtt myWebACL.Arn
+
+  mySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: aws-study-alarm-topic
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref NotificationEmail
+  myWAFBlockedRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "aws-study-waf-blocked-requests-alarm"
+      AlarmDescription: "WAFが10件以上のリクエストをブロックしました"
+      Namespace: "AWS/WAFV2"
+      MetricName: "BlockedRequests"
+      Dimensions:
+        - Name: WebACL
+          Value: aws-study-webacl
+        - Name: Region
+          Value: ap-northeast-1
+        - Name: Rule
+          Value: ALL
+      Statistic: Sum
+      Period: 300
+      Threshold: 10
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      TreatMissingData: "notBreaching"
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref mySNSTopic
