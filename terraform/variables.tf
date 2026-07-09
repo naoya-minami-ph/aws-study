@@ -1,7 +1,6 @@
 variable "my_ip" {
-  description = "Your IP address for SSH access"
+  description = "Your IP address for SSH access (e.g. 203.0.113.1). No default is set intentionally; specify your own value in terraform.tfvars."
   type        = string
-  default     = "175.176.67.202"
 }
 
 variable "db_password" {
