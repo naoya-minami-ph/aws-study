@@ -28,3 +28,7 @@ EC2 instance runs Nginx with its default configuration, listening directly on po
 ## Terraform Setup
 
 `terraform/terraform.tfvars.example` をコピーして `terraform.tfvars` を作成し、ご自身の値(パスワード・通知先メール・IPアドレス)を設定してください。
+
+## EC2 Key Pair
+
+`key_name` のデフォルト値はテンプレート作成者個人のキーペア名です。事前にご自身のAWSアカウントでEC2キーペアを作成し、`terraform.tfvars` に `key_name` を指定してください。
