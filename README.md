@@ -24,3 +24,7 @@ This project provisions a full AWS infrastructure stack using CloudFormation, in
 ## Port Configuration Note
 
 EC2 instance runs Nginx with its default configuration, listening directly on port 80 (no reverse proxy to a separate application such as Spring Boot). The ALB TargetGroup port (80) is intentionally aligned with this actual application configuration.
+
+## Terraform Setup
+
+`terraform/terraform.tfvars.example` をコピーして `terraform.tfvars` を作成し、ご自身の値(パスワード・通知先メール・IPアドレス)を設定してください。
