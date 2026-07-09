@@ -21,3 +21,6 @@ This project provisions a full AWS infrastructure stack using CloudFormation, in
 
 ### ALB Access (Welcome to nginx)
 ![alb](images/alb.png)
+## Port Configuration Note
+
+EC2 instance runs Nginx with its default configuration, listening directly on port 80 (no reverse proxy to a separate application such as Spring Boot). The ALB TargetGroup port (80) is intentionally aligned with this actual application configuration.
