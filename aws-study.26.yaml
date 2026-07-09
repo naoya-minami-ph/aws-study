@@ -334,7 +334,11 @@ Resources:
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
+<<<<<<< HEAD
         MetricName: aws-study-webacl
+=======
+        MetricName: awsStudyWebACL
+>>>>>>> origin/main
 
       Rules:
         - Name: AWS-AWSManagedRulesCommonRuleSet
@@ -353,7 +357,11 @@ Resources:
   MyWebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
+<<<<<<< HEAD
       ResourceArn: !Ref myELB
+=======
+      ResourceArn: !GetAtt myELB.LoadBalancerArn
+>>>>>>> origin/main
       WebACLArn: !GetAtt myWebACL.Arn
 
   mySNSTopic:
@@ -363,7 +371,10 @@ Resources:
       Subscription:
         - Protocol: email
           Endpoint: !Ref NotificationEmail
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
   myWAFBlockedRequestsAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -386,6 +397,7 @@ Resources:
       TreatMissingData: "notBreaching"
       ActionsEnabled: true
       AlarmActions:
+<<<<<<< HEAD
         - !Ref mySNSTopic
 
 # CloudWatch Logs ロググループ
@@ -402,3 +414,6 @@ Resources:
       ResourceArn: !GetAtt myWebACL.Arn
       LogDestinationConfigs:
         - !GetAtt myWAFLogGroup.Arn      
+=======
+        - !Ref mySNSTopic
+>>>>>>> origin/main
