@@ -1,0 +1,3 @@
+db_password = "your-password-here"
+notification_email = "your-email@example.com"
+my_ip = "your-ip-address-here"
