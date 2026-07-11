@@ -17,7 +17,7 @@ the two approaches to Infrastructure as Code.
 
 ## CloudFormation
 
-Template: [`aws-study.26.yaml`](aws-study.26.yaml)
+Template: [`aws-study.26.yaml`](cloudformation/aws-study.26.yaml)
 
 Deployed and verified via the AWS Console (stack CREATE_COMPLETE, SSH access to EC2, ALB routing to
 Nginx, CloudWatch alarm and SNS notification, WAF log delivery). Screenshots available in [`images/`](images/).
