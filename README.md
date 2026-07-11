@@ -63,3 +63,8 @@ own key pair in your AWS account and set `key_name` in `terraform.tfvars` accord
 **Port configuration:** EC2 runs Nginx with its default configuration, listening directly on port 80 (no
 reverse proxy to a separate application such as Spring Boot). The ALB TargetGroup port (80) is intentionally
 aligned with this actual application configuration.
+
+## Certification
+
+AWS Certified Solutions Architect – Associate (SAA-C03)
+Verify: https://www.credly.com/badges/cf70d059-7c42-4f3a-bfd0-40b988722ab3/public_url
